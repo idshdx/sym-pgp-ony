@@ -1,9 +1,21 @@
+lockpost:
+  host: 129.159.7.42
+  user: ubuntu
+  port: 22
+  priv: ~/.ssh/ssh-key-oracle.key
+  sudo: True
+  minion_opts:
+    master_type: disable
+    file_client: local
+  thin_dir: /home/ubuntu/.salt-thin
+
 lockpost-vps:
   host: 129.159.7.42
   user: ubuntu
   port: 22
   priv: ~/.ssh/ssh-key-oracle.key
   sudo: True
-  minion_opt:
+  minion_opts:
     master_type: disable
+    file_client: local
   thin_dir: /home/ubuntu/.salt-thin

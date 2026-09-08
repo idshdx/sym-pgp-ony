@@ -57,12 +57,19 @@ docker compose exec php php bin/phpunit tests/Service/PgpKeyServiceTest.php --no
 
 # Controller tests (requires full kernel boot + GPG keys)
 docker compose exec php php bin/phpunit tests/Controller/DefaultControllerTest.php --no-coverage
+### Running in Production Stack
+In a production deployment where the container has `APP_ENV=prod`, you must override the environment and use `-T` to avoid pseudo-terminal allocation errors:
+```bash
+docker compose -f docker-compose.prod.yml exec -T php sh -c 'export APP_ENV=test APP_DEBUG=1; php bin/phpunit tests/BootstrapTest.php --no-coverage'
 ```
 
 ## Known Issues
 - **ext-opcache platform check**: `composer.json` now has `"platform-check": false` and `"ext-opcache": "8.3"` in `config.platform`. No `--ignore-platform-req` flag is needed anymore.
 - **Missing `symfony/lock`**: Already added to `composer.json` `require` section.
 - **Container hangs on `docker compose run`**: Use `--no-deps` flag to avoid starting dependent services. The entrypoint starts PHP-FPM as a daemon; always pass an explicit command.
+- **GPG signing tests hanging**: If `PgpSigningServiceTest` or signing operations hang indefinitely, GnuPG is likely waiting on stdin for an interactive pinentry prompt due to a passphrase mismatch or missing loopback pinentry configuration. Always verify `PGP_PRIVATE_KEY_PASSPHRASE` matches the key on disk and test with `BootstrapTest.php` before full suite runs.
+- **Production WebTestCase failure**: If tests fail with `LogicException: You cannot create the client used in functional tests if the "framework.test" config is not set to true`, ensure `APP_ENV=test` is explicitly set in the test command.
 - **chown path issues**: Use `docker compose exec php bash -c "chown -R www-data:www-data /var/www/app/var/ /var/www/app/config/pgp/"` (not `docker exec php` without `bash -c`).
 - **Full suite timeout**: If tests hang, run test files individually to isolate the problem. The UI tests may time out if GPG keys aren't generated yet.
 - **Git safe.directory warning**: When running composer/phpunit as www-data in the container, fix with: `docker compose exec php bash -c "git config --global --add safe.directory /var/www/app"`
+

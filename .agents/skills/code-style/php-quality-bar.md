@@ -82,6 +82,9 @@ Both must be consumed before processing; return HTTP 429 with `Retry-After` head
 
 ## 9. Docker/Infrastructure Security
 - **PHP-FPM**: Use `expose` (not `ports`) for internal services. Only nginx publishes ports.
+- **Process user & permissions**: PHP-FPM worker pools run as `www-data:www-data` (`uid=33`). Runtime directories (`var/`, `config/pgp/`) must be owned by `www-data:www-data`. Never use or reference non-existent users like `appuser` in deploy scripts, Salt states, or Docker entrypoints.
+- **Production asset compilation**: Symfony AssetMapper requires `php bin/console asset-map:compile` during production cache warmup.
+- **Headless container execution**: In automated CI/CD scripts, orchestration (Salt), or non-interactive shells, always pass `-T` to `docker compose exec` (`docker compose exec -T php ...`) to avoid pseudo-TTY allocation failures.
 - **Extensions**: Only install what the app needs. No `pdo_mysql`, `redis`, `gd`.
 - **Xdebug**: Only in dev build stage (`target: dev`). Production uses `target: final`.
 - **Status endpoints**: `/nginx_status`, `/status`, `/ping` restricted to `127.0.0.1` via `allow/deny`.

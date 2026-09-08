@@ -298,10 +298,10 @@ After the containers are running, pre-compile the Symfony DI container and route
 docker exec php php bin/console cache:clear --no-debug
 docker exec php php bin/console cache:warmup --no-debug
 docker exec php php bin/console asset-map:compile
-docker exec php chown -R www-data:www-data /var/www/app/var/
+docker exec php chown -R www-data:www-data /var/www/app/var/ /var/www/app/config/pgp/
 ```
 
-The final `chown` ensures PHP-FPM (running as `www-data`) can read and write the compiled cache. This step must be repeated after every redeployment.
+The final `chown` ensures PHP-FPM (running as `www-data`) can read and write the compiled cache and read PGP keys. This step must be repeated after every redeployment.
 
 ---
 
@@ -351,6 +351,19 @@ docker exec php tail -f /var/www/app/var/log/prod.log
 
 There should be no `ERROR` or `CRITICAL` entries on startup. Exit with `Ctrl+C`.
 
+### 7.6 Run Bootstrap Smoke Test
+
+Verify the application kernel boots and core routes function properly:
+
+```shell
+docker exec php sh -c 'export APP_ENV=test APP_DEBUG=1; php bin/phpunit tests/BootstrapTest.php --no-coverage'
+```
+
+> **Note:** In production containers, `APP_ENV=prod` is the default. Explicitly setting `APP_ENV=test APP_DEBUG=1` is required so that Symfony's `WebTestCase` boots the test environment.
+
+
+There should be no `ERROR` or `CRITICAL` entries on startup. Exit with `Ctrl+C`.
+
 ---
 
 ## 8. Redeployment
@@ -392,6 +405,16 @@ docker exec php chown -R www-data:www-data /var/www/app/var/
 ### 8.5 Re-run Smoke Tests
 
 Repeat Section 7 to confirm the updated deployment is healthy.
+
+### 8.6 Automated Redeployment with Salt
+
+The repository includes an automated deployment state in `salt/states/lockpost.sls` and configuration in `salt/roster`. This handles code sync, Docker build, cache warming, permissions, and smoke testing in a single step:
+
+```shell
+salt-ssh -i ~/.ssh/ssh-key-oracle.key -c salt/ lockpost state.apply lockpost
+```
+
+See `.agents/skills/prod-server/deploy-salt-ssh.md` for complete details, prerequisites, and manual fallback instructions.
 
 > **Persistence note:** `config/pgp/` and `.env.prod` are bind-mounted from the VPS host filesystem. They survive image rebuilds, `docker compose down`, and VPS reboots. You do not need to regenerate PGP keys or recreate `.env.prod` during a normal redeployment.
 
