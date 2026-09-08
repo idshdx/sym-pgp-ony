@@ -23,14 +23,36 @@ description: Verify the Lockpost Symfony application can bootstrap successfully 
 
 ## Commands
 
+### Local Dev Environment
+
 ```bash
 docker compose exec php php bin/phpunit tests/BootstrapTest.php --no-coverage
 ```
 
-The test environment automatically loads `.env`, so no extra env vars are needed when using `docker compose exec`.
+### Production Environment / Headless Runners
+
+> **Important:** In production containers (`docker-compose.prod.yml`), `APP_ENV=prod` is set by default. Functional tests extending `WebTestCase` will throw `LogicException: You cannot create the client used in functional tests if the "framework.test" config is not set to true` unless `APP_ENV=test` is explicitly exported.
+> 
+> Also use `-T` to disable pseudo-TTY allocation when running through automated deployment tools or non-interactive shells.
+
+```bash
+# In production containers or automated deployment scripts:
+docker compose -f docker-compose.prod.yml exec -T php sh -c 'export APP_ENV=test APP_DEBUG=1; php bin/phpunit tests/BootstrapTest.php --no-coverage'
+```
+
+### Post-Bootstrap Smoke Checks
+
+After the bootstrap test passes, verify key HTTP endpoints return `200 OK`:
+
+```bash
+curl -sI http://127.0.0.1:80/ | head -5
+curl -sI http://127.0.0.1:80/verify | head -5
+curl -sI http://127.0.0.1:80/server-key | head -5
+```
 
 ## Notes
 
 - `tests/BootstrapTest.php` is the project bootstrap smoke test.
-- If this test fails, the app is not ready for broader test execution or local use.
+- If this test fails, the app is not ready for broader test execution or deployment.
 - `--no-coverage` keeps this check fast; coverage is not the goal here.
+

@@ -144,11 +144,11 @@ docker compose -f docker-compose.prod.yml ps
 docker exec php php bin/console cache:clear --no-debug
 docker exec php php bin/console cache:warmup --no-debug
 docker exec php php bin/console asset-map:compile
-docker exec php chown -R www-data:www-data /var/www/app/var/
+docker exec php chown -R www-data:www-data /var/www/app/var/ /var/www/app/config/pgp/
 ```
 
 - [ ] Cache warmup complete
-- [ ] `/var/www/app/var/` owned by `www-data`
+- [ ] `/var/www/app/var/` and `/var/www/app/config/pgp/` owned by `www-data`
 
 ---
 
@@ -157,12 +157,13 @@ docker exec php chown -R www-data:www-data /var/www/app/var/
 ```bash
 curl -s -o /dev/null -w "%{http_code}" http://localhost/   # expect 200
 curl -s http://localhost/server-key | grep "BEGIN PGP PUBLIC KEY BLOCK"
-docker exec php php bin/phpunit --no-coverage
+docker exec php sh -c 'export APP_ENV=test APP_DEBUG=1; php bin/phpunit tests/BootstrapTest.php --no-coverage'
 ```
 
 - [ ] NGINX returns `200`
 - [ ] `/server-key` returns armored public key
-- [ ] PHPUnit passes
+- [ ] Bootstrap smoke test passes
+
 
 ---
 
@@ -190,7 +191,7 @@ docker compose -f docker-compose.prod.yml up -d
 docker exec php php bin/console cache:clear --no-debug
 docker exec php php bin/console cache:warmup --no-debug
 docker exec php php bin/console asset-map:compile
-docker exec php chown -R www-data:www-data /var/www/app/var/
+docker exec php chown -R www-data:www-data /var/www/app/var/ /var/www/app/config/pgp/
 curl -s -o /dev/null -w "%{http_code}" http://localhost/
 ```
 
@@ -198,6 +199,15 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost/
 - [ ] Containers recreated
 - [ ] Cache warmed
 - [ ] Smoke test passes
+
+### Automated Option (Salt)
+
+```bash
+salt-ssh -i ~/.ssh/ssh-key-oracle.key -c salt/ lockpost state.apply lockpost
+```
+
+- [ ] Salt deployment executed (`lockpost.sls` applies all stages)
+
 
 ---
 

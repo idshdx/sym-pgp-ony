@@ -1,7 +1,13 @@
 file_roots:
   base:
-    - /srv/salt
+    - salt/states
 pillar_roots:
   base:
-    - /srv/pillar
-roster_file: /srv/salt/roster
+    - salt/pillar
+roster_file: salt/roster
+
+# salt-ssh settings
+ssh_user: ubuntu
+ssh_keyfile: ~/.ssh/ssh-key-oracle.key
+ssh_timeout: 30
+ssh_keepalive: True
